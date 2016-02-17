@@ -34,4 +34,15 @@ Some material for each subtasks
     * [PyAutoGUI](http://pyautogui.readthedocs.org/en/latest/cheatsheet.html)
     * [PyUserInput](https://github.com/SavinaRoja/PyUserInput)
 
+    For instal PyAutoGUI on Linux (for python 2.x):
+    
+    ``` bash
+    # install x-lib and scrot (pip not work for me)
+    $ sudo apt-get install  python-xlib
+    $ sudo apt-get install scrot
+    
+    # skip install python-tk and python2.x-dev (already had)
+    # instal Pyautogui
+    $ sudo pip install pyautogui
+    ```
 
