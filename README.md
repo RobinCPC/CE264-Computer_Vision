@@ -34,7 +34,7 @@ Some material for each subtasks
     * [PyAutoGUI](http://pyautogui.readthedocs.org/en/latest/cheatsheet.html)
     * [PyUserInput](https://github.com/SavinaRoja/PyUserInput)
 
-    For instal PyAutoGUI on Linux (for python 2.x):
+    For install PyAutoGUI on Linux (for python 2.x):
     
     ``` bash
     # install x-lib and scrot (pip not work for me)
@@ -45,4 +45,12 @@ Some material for each subtasks
     # instal Pyautogui
     $ sudo pip install pyautogui
     ```
-
+    
+    For install PyAutoGui on Window (for python 2.x):
+    Open cmd.exe
+    ```
+    # Install pillow first (PIL module may cause error during install)
+    C:\Python27\Scripts\pip.exe install pillow  
+    C:\Python27\Scripts\pip.exe install pyautogui
+    ```
+    Turn off Windows UAC
