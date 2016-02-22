@@ -32,7 +32,11 @@ class App(object):
         self.cam = cv2.VideoCapture(video_src)
         ret, self.frame = self.cam.read()
         cv2.namedWindow('gesture_hci')
+
         self.cmd_switch = False
+        self.mask_lower_yrb = np.array([54, 131, 110])
+        self.mask_upper_yrb = np.array([163, 157, 135])
+
     
     def test_auto_gui(self):    # testing pyautogui  
         if self.cmd_switch:
@@ -64,12 +68,17 @@ class App(object):
         while True:
             ret, self.frame = self.cam.read()
             org_vis  = self.frame.copy()
-            hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
-            yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB)
+            #hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
             
+            # Skin detect filter
+            yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB) 
+            mask_skin = cv2.inRange(yrb, self.mask_lower_yrb, self.mask_upper_yrb)
+            res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
+
             cv2.imshow('gesture_hci', org_vis)
-            cv2.imshow('HSV', hsv)
+            #cv2.imshow('HSV', hsv)
             cv2.imshow('YCR_CB', yrb)
+            cv2.imshow('YRB_skin', res_skin)
 
             self.test_auto_gui()
 
