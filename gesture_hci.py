@@ -36,9 +36,11 @@ class App(object):
         self.cmd_switch = False
         self.mask_lower_yrb = np.array([54, 131, 110])
         self.mask_upper_yrb = np.array([163, 157, 135])
-
+        
+        self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
     
-    def test_auto_gui(self):    # testing pyautogui  
+    # testing pyautogui
+    def test_auto_gui(self):
         if self.cmd_switch:
             # Drag mouse to control some object on screen (such as googlemap at webpage)
             distance = 100.
@@ -67,18 +69,25 @@ class App(object):
     def run(self):
         while True:
             ret, self.frame = self.cam.read()
-            org_vis  = self.frame.copy()
+            org_vis = self.frame.copy()
+            #fgmask = self.fgbg.apply(org_vis)
+            #org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
             #hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
             
             # Skin detect filter
             yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB) 
             mask_skin = cv2.inRange(yrb, self.mask_lower_yrb, self.mask_upper_yrb)
             res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
+            
+            fgmask = self.fgbg.apply(res_skin)
+            org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
 
             cv2.imshow('gesture_hci', org_vis)
             #cv2.imshow('HSV', hsv)
-            cv2.imshow('YCR_CB', yrb)
+            #cv2.imshow('YCR_CB', yrb)
             cv2.imshow('YRB_skin', res_skin)
+            cv2.imshow('fgmask', fgmask)
+            cv2.imshow('org_fg', org_fg)
 
             self.test_auto_gui()
 
