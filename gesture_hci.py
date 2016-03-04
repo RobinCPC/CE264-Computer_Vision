@@ -31,13 +31,13 @@ def nothing(x):
     pass
 
 ### uncomment if want to do on-line skin calibration
-#cv2.namedWindow('YRB_calib')
-#cv2.createTrackbar( 'Ymin', 'YRB_calib', 54, 255, nothing)
-#cv2.createTrackbar( 'Ymax', 'YRB_calib', 163, 255, nothing)
-#cv2.createTrackbar( 'CRmin', 'YRB_calib', 131, 255, nothing)
-#cv2.createTrackbar( 'CRmax', 'YRB_calib', 157, 255, nothing)
-#cv2.createTrackbar( 'CBmin', 'YRB_calib', 110, 255, nothing)
-#cv2.createTrackbar( 'CBmax', 'YRB_calib', 135, 255, nothing)
+cv2.namedWindow('YRB_calib')
+cv2.createTrackbar( 'Ymin', 'YRB_calib', 54, 255, nothing)
+cv2.createTrackbar( 'Ymax', 'YRB_calib', 143, 255, nothing)
+cv2.createTrackbar( 'CRmin', 'YRB_calib', 131, 255, nothing)
+cv2.createTrackbar( 'CRmax', 'YRB_calib', 157, 255, nothing)
+cv2.createTrackbar( 'CBmin', 'YRB_calib', 110, 255, nothing)
+cv2.createTrackbar( 'CBmax', 'YRB_calib', 155, 255, nothing)
 
 
 class App(object):
@@ -112,9 +112,16 @@ class App(object):
             #org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
             #hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
             
-            # Skin detect filter
-            yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB) 
+            ### Skin detect filter
+            yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB)
+            # use median bluring to remove signal noise in YCRCB domain
+            yrb = cv2.medianBlur(yrb,5) 
             mask_skin = cv2.inRange(yrb, self.mask_lower_yrb, self.mask_upper_yrb)
+
+            # morphological transform to remove unwanted part
+            kernel = np.ones( (5,5), np.uint8 )
+            mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
+
             res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
             #res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
             if self.calib_switch:
