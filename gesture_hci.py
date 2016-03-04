@@ -17,6 +17,7 @@ Keys:
 
 import cv2
 import numpy as np
+import math
 
 # for controlling mouse and keyboard
 import pyautogui
@@ -50,7 +51,7 @@ class App(object):
         self.mask_lower_yrb = np.array([54, 131, 110])      #[54, 131, 110]
         self.mask_upper_yrb = np.array([143, 157, 155])     #[163, 157, 135]
         
-        self.fgbg = cv2.createBackgroundSubtractorKNN()
+        self.fgbg = cv2.BackgroundSubtractorMOG2()
         #self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
 
         # create trackbar for skin calibration
@@ -78,7 +79,6 @@ class App(object):
 
     # Do skin dection and also some filtering
     def skin_detection(self, raw_yrb, org_vis):
-        raw_yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB)
         # use median bluring to remove signal noise in YCRCB domain
         raw_yrb = cv2.medianBlur(raw_yrb,5) 
         mask_skin = cv2.inRange(raw_yrb, self.mask_lower_yrb, self.mask_upper_yrb)
@@ -152,36 +152,81 @@ class App(object):
             fgmask = self.fgbg.apply(res_skin)
             org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
 
-            # Find Contours inside ROI
+            ### Find Contours inside ROI
             cv2.rectangle(res_skin, (300, 300), (100, 100), (0,255,0), 0)
             crop_res = res_skin[100:300, 100:300]
             grey = cv2.cvtColor(crop_res, cv2.COLOR_BGR2GRAY)
 
-            _, thresh1 = cv2.threshold( grey, 127, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+            _, thresh1 = cv2.threshold( grey, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
 
             cv2.imshow('Thresh', thresh1)
-            _, contours, hierchy = cv2.findContours(thresh1.copy(), cv2.RETR_TREE, \
-                    cv2.CHAIN_APPROX_NONE)
+            contours, hierchy = cv2.findContours( thresh1.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
 
+            drawing = np.zeros(crop_res.shape, np.uint8)
             max_area = -1
             ci = 0
-            for i in range(len(contours)):
-                cnt = contours[i]
-                area = cv2.contourArea(cnt)
-                if area > max_area:
-                    max_area = area
-                    ci = i
-            cnt = contours[ci]
-            x,y,w,h = cv2.boundingRect(cnt)
-            cv2.rectangle(crop_res, (x,y), (x+w, y+h), (0,0,255), 0 )
+            #print 'length of contours: ', len(contours)
+            #print 'shape of frame: ',org_vis.shape
+            if len(contours) > 0:
+                for i in range(len(contours)):
+                    cnt = contours[i]
+                    area = cv2.contourArea(cnt)
+                    if area > max_area:
+                        max_area = area
+                        ci = i
+                cnt = contours[ci]
+                x,y,w,h = cv2.boundingRect(cnt)
+                cv2.rectangle(crop_res, (x,y), (x+w, y+h), (0,0,255), 0 )
+
+                hull = cv2.convexHull(cnt)
+                cv2.drawContours(drawing, [cnt], 0, (0, 255, 0), 0)
+                cv2.drawContours(drawing, [hull], 0, (0, 0, 255), 0)
+                hull = cv2.convexHull( cnt, returnPoints = False)
+                #import pdb; pdb.set_trace()
+                if hull.size > 2:
+                    defects = cv2.convexityDefects(cnt, hull)
+                count_defects = 0
+                cv2.drawContours(thresh1, contours, -1, (0, 255, 0), 3)
+
+                ### Gesture Recognization
+                for i in range(defects.shape[0]):
+                    s, e, f, d = defects[i,0]
+                    start = tuple(cnt[s][0])
+                    end = tuple(cnt[e][0])
+                    far = tuple(cnt[f][0])
+                    a = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
+                    b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
+                    c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
+                    angle = math.acos( (b**2 + c**2 - a**2)/(2*b*c) ) * 180/math.pi
+                    print 'angle= ', angle
+                    if angle <= 90:
+                        count_defects += 1
+                        cv2.circle( crop_res, far, 1, [0,0,255], -1)
+                    #dist = cv2.pointPolygonTest(cnt, fat, True)
+                    cv2.line(crop_res, start, end, [0,255,0], 2)
+                    #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
+                if count_defects == 1:
+                    cv2.putText(org_vis, '2 finger, Right', (50,50), cv2.FONT_ITALIC, 2, 2)
+                elif count_defects == 2:
+                    cv2.putText(org_vis, '3 finger, Left', (50,50), cv2.FONT_ITALIC, 2, 2)
+                elif count_defects == 3:
+                    cv2.putText(org_vis, '4 finger, Down', (50,50), cv2.FONT_ITALIC, 2, 2)
+                elif count_defects == 4:
+                    cv2.putText(org_vis, '5 finger, Up', (50,50), cv2.FONT_ITALIC, 2, 2)
+                else:
+                    cv2.putText(org_vis, 'No finger detect!', (50,50), cv2.FONT_ITALIC, 2, 2)
+
 
 
             cv2.imshow('gesture_hci', org_vis)
             #cv2.imshow('HSV', hsv)
             #cv2.imshow('YCR_CB', yrb)
             cv2.imshow('YRB_skin', res_skin)
-            cv2.imshow('fgmask', fgmask)
-            cv2.imshow('org_fg', org_fg)
+            #cv2.imshow('fgmask', fgmask)
+            #cv2.imshow('org_fg', org_fg)
+
+            all_img = np.hstack((drawing, crop_res))
+            cv2.imshow('Contours', all_img)
 
             self.test_auto_gui()
 
