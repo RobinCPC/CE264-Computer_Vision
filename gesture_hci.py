@@ -76,6 +76,23 @@ class App(object):
         self.mask_lower_yrb = np.array([ymin, rmin, bmin])
         self.mask_upper_yrb = np.array([ymax, rmax, bmax])
 
+    # Do skin dection and also some filtering
+    def skin_detection(self, raw_yrb, org_vis):
+        raw_yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB)
+        # use median bluring to remove signal noise in YCRCB domain
+        raw_yrb = cv2.medianBlur(raw_yrb,5) 
+        mask_skin = cv2.inRange(raw_yrb, self.mask_lower_yrb, self.mask_upper_yrb)
+
+        # morphological transform to remove unwanted part
+        kernel = np.ones( (5,5), np.uint8 )
+        mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
+
+        res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
+        #res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
+        
+        return res_skin
+
+
     # testing pyautogui
     def test_auto_gui(self):
         if self.cmd_switch:
@@ -114,22 +131,50 @@ class App(object):
             
             ### Skin detect filter
             yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB)
-            # use median bluring to remove signal noise in YCRCB domain
-            yrb = cv2.medianBlur(yrb,5) 
-            mask_skin = cv2.inRange(yrb, self.mask_lower_yrb, self.mask_upper_yrb)
+            res_skin = self.skin_detection( yrb, org_vis)
+            
+            ## use median bluring to remove signal noise in YCRCB domain
+            #yrb = cv2.medianBlur(yrb,5) 
+            #mask_skin = cv2.inRange(yrb, self.mask_lower_yrb, self.mask_upper_yrb)
 
-            # morphological transform to remove unwanted part
-            kernel = np.ones( (5,5), np.uint8 )
-            mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
+            ## morphological transform to remove unwanted part
+            #kernel = np.ones( (5,5), np.uint8 )
+            #mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
 
-            res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
-            #res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
+            #res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
+            ##res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
+
+            ## check if want to do skin calibration
             if self.calib_switch:
                 self.skin_calib(yrb)
             
             # Background Subtraction
             fgmask = self.fgbg.apply(res_skin)
             org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
+
+            # Find Contours inside ROI
+            cv2.rectangle(res_skin, (300, 300), (100, 100), (0,255,0), 0)
+            crop_res = res_skin[100:300, 100:300]
+            grey = cv2.cvtColor(crop_res, cv2.COLOR_BGR2GRAY)
+
+            _, thresh1 = cv2.threshold( grey, 127, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+            cv2.imshow('Thresh', thresh1)
+            _, contours, hierchy = cv2.findContours(thresh1.copy(), cv2.RETR_TREE, \
+                    cv2.CHAIN_APPROX_NONE)
+
+            max_area = -1
+            ci = 0
+            for i in range(len(contours)):
+                cnt = contours[i]
+                area = cv2.contourArea(cnt)
+                if area > max_area:
+                    max_area = area
+                    ci = i
+            cnt = contours[ci]
+            x,y,w,h = cv2.boundingRect(cnt)
+            cv2.rectangle(crop_res, (x,y), (x+w, y+h), (0,0,255), 0 )
+
 
             cv2.imshow('gesture_hci', org_vis)
             #cv2.imshow('HSV', hsv)
