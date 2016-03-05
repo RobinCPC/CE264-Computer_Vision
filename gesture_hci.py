@@ -48,14 +48,21 @@ class App(object):
         cv2.namedWindow('gesture_hci')
 
         self.cmd_switch = False
-        self.mask_lower_yrb = np.array([54, 131, 110])      #[54, 131, 110]
-        self.mask_upper_yrb = np.array([143, 157, 155])     #[163, 157, 135]
+        self.mask_lower_yrb = np.array([40, 131, 80])      #[54, 131, 110]
+        self.mask_upper_yrb = np.array([163, 157, 169])     #[163, 157, 135]
         
         self.fgbg = cv2.BackgroundSubtractorMOG2()
         #self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
 
         # create trackbar for skin calibration
         self.calib_switch = False
+
+        # define dynamic ROI area
+        self.ROIx, self.ROIy = 200, 200
+        self.track_switch = False
+
+        self.preCX = None
+        self.preCY = None
     
 
     # On-line Calibration for skin detection (bug, not stable)
@@ -153,8 +160,33 @@ class App(object):
             org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
 
             ### Find Contours inside ROI
-            cv2.rectangle(res_skin, (300, 300), (100, 100), (0,255,0), 0)
-            crop_res = res_skin[100:300, 100:300]
+            # setting flexible ROI range
+            Rxmin,Rymin,Rxmax,Rymax = (0,)*4
+            if self.ROIx - 100 < 0:
+                Rxmin = 0
+            else:
+                Rxmin = self.ROIx - 100
+            
+            if self.ROIx + 100 > res_skin.shape[0]:
+                Rxmax = res_skin.shape[0]
+            else:
+                Rxmax = self.ROIx + 100
+            
+            if self.ROIy - 100 < 0:
+                Rymin = 0
+            else:
+                Rymin = self.ROIy - 100
+            
+            if self.ROIy + 100 > res_skin.shape[1]:
+                Rymax = res_skin.shape[1]
+            else:
+                Rymax = self.ROIy + 100
+
+            #if self.track_switch:
+            #    import pdb; pdb.set_trace()
+                
+            cv2.rectangle(res_skin, (Rxmax, Rymax), (Rxmin, Rymin), (0,255,0), 0)
+            crop_res = res_skin[Rymin: Rymax, Rxmin:Rxmax]
             grey = cv2.cvtColor(crop_res, cv2.COLOR_BGR2GRAY)
 
             _, thresh1 = cv2.threshold( grey, 127, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
@@ -175,9 +207,35 @@ class App(object):
                         max_area = area
                         ci = i
                 cnt = contours[ci]
+
+
+                
+
                 x,y,w,h = cv2.boundingRect(cnt)
                 cv2.rectangle(crop_res, (x,y), (x+w, y+h), (0,0,255), 0 )
-
+                
+                # check if start to track hand
+                if self.track_switch:
+                    M = cv2.moments(cnt)
+                    if not M['m00'] == 0:
+                        self.ROIx = int(M['m10']/M['m00']) + Rxmin #+ x
+                        self.ROIy = int(M['m01']/M['m00']) + Rymin #+ y
+                    else:
+                        self.ROIx = 200
+                        self.ROIy = 200
+                
+                # debug draw a  circle at center
+                M = cv2.moments(cnt)
+                if not M['m00'] == 0:
+                    cx =  int(M['m10']/M['m00'])
+                    cy =  int(M['m01']/M['m00'])
+                    #if self.track_switch:
+                    #print 'cx,cy = ', cx, cy
+                    #print 'x , y = ', x,y
+                    #print 'cx+Rx, cy+Ry', cx+Rxmin, cy+Rymin
+                    cv2.circle(res_skin, (cx+Rxmin,cy+Rymin), 5, [0,255,255],-1)
+                
+                
                 hull = cv2.convexHull(cnt)
                 cv2.drawContours(drawing, [cnt], 0, (0, 255, 0), 0)
                 cv2.drawContours(drawing, [hull], 0, (0, 0, 255), 0)
@@ -198,15 +256,27 @@ class App(object):
                     b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
                     c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
                     angle = math.acos( (b**2 + c**2 - a**2)/(2*b*c) ) * 180/math.pi
-                    print 'angle= ', angle
+                    #print 'angle= ', angle
                     if angle <= 90:
                         count_defects += 1
                         cv2.circle( crop_res, far, 1, [0,0,255], -1)
                     #dist = cv2.pointPolygonTest(cnt, fat, True)
                     cv2.line(crop_res, start, end, [0,255,0], 2)
                     #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
+                
+                d_x, d_y = 0, 0
+                if not self.preCX == None:
+                    d_x = self.ROIx - self.preCX
+                    d_y = self.ROIy - self.preCY
+
                 if count_defects == 1:
                     cv2.putText(org_vis, '2 finger, Right', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    if self.cmd_switch:
+                        pyautogui.dragRel(d_x, d_y, button='left')
+                        #pyautogui.mouseDown(button='left')
+                        #pyautogui.moveRel(d_x, d_y)
+                    #else:
+                    #    pyautogui.mouseUp(button='left')
                 elif count_defects == 2:
                     cv2.putText(org_vis, '3 finger, Left', (50,50), cv2.FONT_ITALIC, 2, 2)
                 elif count_defects == 3:
@@ -215,6 +285,9 @@ class App(object):
                     cv2.putText(org_vis, '5 finger, Up', (50,50), cv2.FONT_ITALIC, 2, 2)
                 else:
                     cv2.putText(org_vis, 'No finger detect!', (50,50), cv2.FONT_ITALIC, 2, 2)
+
+                self.preCX = self.ROIx
+                self.preCY = self.ROIy
 
 
 
@@ -228,7 +301,7 @@ class App(object):
             all_img = np.hstack((drawing, crop_res))
             cv2.imshow('Contours', all_img)
 
-            self.test_auto_gui()
+            #self.test_auto_gui()
 
             ch = cv2.waitKey(5) & 0xFF
             if ch == 27:
@@ -237,6 +310,8 @@ class App(object):
                 self.cmd_switch = not self.cmd_switch
             elif ch == ord('s'):
                 self.calib_switch = not self.calib_switch
+            elif ch == ord('t'):
+                self.track_switch = not self.track_switch
 
         cv2.destroyAllWindows()
 
