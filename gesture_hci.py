@@ -26,7 +26,7 @@ import sys
 
 # Fail-safe mode (prevent from ou of control)
 pyautogui.FAILSAFE = True
-pyautogui.PAUSE = 0.1 # pause each pyautogui function 1. sec
+pyautogui.PAUSE = 0.1 # pause each pyautogui function 0.1 sec
 
 # Dummy callback for trackbar
 def nothing(x):
@@ -285,15 +285,18 @@ class App(object):
                     #else:
                     #    pyautogui.mouseUp(button='left')
                 elif count_defects == 2:
-                    cv2.putText(org_vis, '3 finger, Left', (50,50), cv2.FONT_ITALIC, 2, 2)
-                    if self.cmd_switch:
-                        pyautogui.scroll(d_y,pause=0.2) 
-                elif count_defects == 3:
-                    cv2.putText(org_vis, '4 finger, Down', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    cv2.putText(org_vis, '3 finger, Left. (rotate)', (50,50), cv2.FONT_ITALIC, 2, 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='left')
+                        #pyautogui.scroll(d_y,pause=0.2)
+                elif count_defects == 3:
+                    cv2.putText(org_vis, '4 finger, middle. (zoom)', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    if self.cmd_switch:
+                        pyautogui.dragRel(d_x, d_y, button='middle')
                 elif count_defects == 4:
-                    cv2.putText(org_vis, '5 finger, Up', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    cv2.putText(org_vis, '5 finger, right. (pan)', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    if self.cmd_switch:
+                        pyautogui.dragRel(d_x, d_y, button='right')
                 else:
                     cv2.putText(org_vis, 'No finger detect!', (50,50), cv2.FONT_ITALIC, 2, 2)
 
