@@ -18,6 +18,7 @@ Keys:
 import cv2
 import numpy as np
 import math
+import time
 
 # for controlling mouse and keyboard
 import pyautogui
@@ -25,7 +26,7 @@ import sys
 
 # Fail-safe mode (prevent from ou of control)
 pyautogui.FAILSAFE = True
-pyautogui.PAUSE = 1.0 # pause each pyautogui function 1. sec
+pyautogui.PAUSE = 0.1 # pause each pyautogui function 1. sec
 
 # Dummy callback for trackbar
 def nothing(x):
@@ -48,9 +49,9 @@ class App(object):
         cv2.namedWindow('gesture_hci')
 
         self.cmd_switch = False
-        self.mask_lower_yrb = np.array([40, 131, 80])      #[54, 131, 110]
-        self.mask_upper_yrb = np.array([163, 157, 169])     #[163, 157, 135]
-        
+        self.mask_lower_yrb = np.array([44, 131, 80])      #[54, 131, 110]
+        self.mask_upper_yrb = np.array([163, 157, 155])     #[163, 157, 135]
+
         self.fgbg = cv2.BackgroundSubtractorMOG2()
         #self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
 
@@ -63,12 +64,15 @@ class App(object):
 
         self.preCX = None
         self.preCY = None
-    
+
+        # count loop (frame)
+        self.n_frame = 0
+
 
     # On-line Calibration for skin detection (bug, not stable)
     def skin_calib(self, raw_yrb):
         mask_skin = cv2.inRange(raw_yrb, self.mask_lower_yrb, self.mask_upper_yrb)
-        cal_skin = cv2.bitwise_and( raw_yrb, raw_yrb, mask = mask_skin) 
+        cal_skin = cv2.bitwise_and( raw_yrb, raw_yrb, mask = mask_skin)
         cv2.imshow('YRB_calib', cal_skin )
         k = cv2.waitKey(5) & 0xFF
         if k == ord('s'):
@@ -87,16 +91,17 @@ class App(object):
     # Do skin dection and also some filtering
     def skin_detection(self, raw_yrb, org_vis):
         # use median bluring to remove signal noise in YCRCB domain
-        raw_yrb = cv2.medianBlur(raw_yrb,5) 
+        raw_yrb = cv2.medianBlur(raw_yrb,5)
         mask_skin = cv2.inRange(raw_yrb, self.mask_lower_yrb, self.mask_upper_yrb)
 
         # morphological transform to remove unwanted part
         kernel = np.ones( (5,5), np.uint8 )
-        mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
+        #mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
+        mask_skin = cv2.dilate(mask_skin, kernel, iterations=2)
 
         res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
         #res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
-        
+ 
         return res_skin
 
 
@@ -124,40 +129,34 @@ class App(object):
 
             # message box
             pyautogui.alert(text='pyautogui testing over, click ok to end', title='Alert', button='OK')
-            self.cmd_switch = not self.cmd_switch   # turn off 
+            self.cmd_switch = not self.cmd_switch   # turn off
 
 
     def run(self):
         while True:
+            if self.n_frame == 0:
+                ini_time = time.time()
             ret, self.frame = self.cam.read()
             org_vis = self.frame.copy()
             #org_vis = cv2.fastNlMeansDenoisingColored(self.frame, None, 10,10,7,21) # try to denoise but time comsuming
             #fgmask = self.fgbg.apply(org_vis)
             #org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
-            #hsv = cv2.cvtColor(self.frame, cv2.COLOR_BGR2HSV)
-            
+
             ### Skin detect filter
             yrb = cv2.cvtColor(self.frame, cv2.COLOR_BGR2YCR_CB)
             res_skin = self.skin_detection( yrb, org_vis)
-            
-            ## use median bluring to remove signal noise in YCRCB domain
-            #yrb = cv2.medianBlur(yrb,5) 
-            #mask_skin = cv2.inRange(yrb, self.mask_lower_yrb, self.mask_upper_yrb)
 
-            ## morphological transform to remove unwanted part
-            #kernel = np.ones( (5,5), np.uint8 )
-            #mask_skin = cv2.morphologyEx(mask_skin, cv2.MORPH_OPEN, kernel)
-
-            #res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
-            ##res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
 
             ## check if want to do skin calibration
             if self.calib_switch:
                 self.skin_calib(yrb)
             
             # Background Subtraction
-            fgmask = self.fgbg.apply(res_skin)
-            org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
+            fgmask = self.fgbg.apply(cv2.medianBlur(org_vis, 5))
+            org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
+            #fgmask = self.fgbg.apply(res_skin)
+            #org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
+
 
             ### Find Contours inside ROI
             # setting flexible ROI range
@@ -219,7 +218,7 @@ class App(object):
                     M = cv2.moments(cnt)
                     if not M['m00'] == 0:
                         self.ROIx = int(M['m10']/M['m00']) + Rxmin #+ x
-                        self.ROIy = int(M['m01']/M['m00']) + Rymin #+ y
+                        self.ROIy = int(M['m01']/M['m00']) + Rymin - 30 #+ y
                     else:
                         self.ROIx = 200
                         self.ROIy = 200
@@ -247,22 +246,23 @@ class App(object):
                 cv2.drawContours(thresh1, contours, -1, (0, 255, 0), 3)
 
                 ### Gesture Recognization
-                for i in range(defects.shape[0]):
-                    s, e, f, d = defects[i,0]
-                    start = tuple(cnt[s][0])
-                    end = tuple(cnt[e][0])
-                    far = tuple(cnt[f][0])
-                    a = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
-                    b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
-                    c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
-                    angle = math.acos( (b**2 + c**2 - a**2)/(2*b*c) ) * 180/math.pi
-                    #print 'angle= ', angle
-                    if angle <= 90:
-                        count_defects += 1
-                        cv2.circle( crop_res, far, 1, [0,0,255], -1)
-                    #dist = cv2.pointPolygonTest(cnt, fat, True)
-                    cv2.line(crop_res, start, end, [0,255,0], 2)
-                    #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
+                if not defects == None:
+                    for i in range(defects.shape[0]):
+                        s, e, f, d = defects[i,0]
+                        start = tuple(cnt[s][0])
+                        end = tuple(cnt[e][0])
+                        far = tuple(cnt[f][0])
+                        a = math.sqrt((end[0] - start[0])**2 + (end[1] - start[1])**2)
+                        b = math.sqrt((far[0] - start[0])**2 + (far[1] - start[1])**2)
+                        c = math.sqrt((end[0] - far[0])**2 + (end[1] - far[1])**2)
+                        angle = math.acos( (b**2 + c**2 - a**2)/(2*b*c) ) * 180/math.pi
+                        #print 'angle= ', angle
+                        if angle <= 90:
+                            count_defects += 1
+                            cv2.circle( crop_res, far, 1, [0,0,255], -1)
+                        #dist = cv2.pointPolygonTest(cnt, fat, True)
+                        cv2.line(crop_res, start, end, [0,255,0], 2)
+                        #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
                 
                 d_x, d_y = 0, 0
                 if not self.preCX == None:
@@ -270,17 +270,22 @@ class App(object):
                     d_y = self.ROIy - self.preCY
 
                 if count_defects == 1:
-                    cv2.putText(org_vis, '2 finger, Right', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    str1 = '2 finger, move \nmouse dx,dy = ' + str(d_x) + ', '+ str(d_y)
+                    cv2.putText(org_vis,str1 , (50,50), cv2.FONT_ITALIC, 1, 2)
                     if self.cmd_switch:
-                        pyautogui.dragRel(d_x, d_y, button='left')
+                        pyautogui.moveRel(d_x, d_y)
                         #pyautogui.mouseDown(button='left')
                         #pyautogui.moveRel(d_x, d_y)
                     #else:
                     #    pyautogui.mouseUp(button='left')
                 elif count_defects == 2:
                     cv2.putText(org_vis, '3 finger, Left', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    if self.cmd_switch:
+                        pyautogui.scroll(d_y,pause=0.2) 
                 elif count_defects == 3:
                     cv2.putText(org_vis, '4 finger, Down', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    if self.cmd_switch:
+                        pyautogui.dragRel(d_x, d_y, button='left')
                 elif count_defects == 4:
                     cv2.putText(org_vis, '5 finger, Up', (50,50), cv2.FONT_ITALIC, 2, 2)
                 else:
@@ -292,7 +297,6 @@ class App(object):
 
 
             cv2.imshow('gesture_hci', org_vis)
-            #cv2.imshow('HSV', hsv)
             #cv2.imshow('YCR_CB', yrb)
             cv2.imshow('YRB_skin', res_skin)
             #cv2.imshow('fgmask', fgmask)
@@ -312,6 +316,12 @@ class App(object):
                 self.calib_switch = not self.calib_switch
             elif ch == ord('t'):
                 self.track_switch = not self.track_switch
+            
+            if self.n_frame == 3:
+                cur_time = time.time()
+                print 'time for one loop:',(cur_time - ini_time)
+            print 'n_frame: ', self.n_frame
+            self.n_frame = (self.n_frame + 1) % 4
 
         cv2.destroyAllWindows()
 
