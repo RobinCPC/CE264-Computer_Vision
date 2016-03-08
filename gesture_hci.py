@@ -52,8 +52,8 @@ class App(object):
         self.mask_lower_yrb = np.array([44, 131, 80])      #[54, 131, 110]
         self.mask_upper_yrb = np.array([163, 157, 155])     #[163, 157, 135]
 
-        self.fgbg = cv2.BackgroundSubtractorMOG2()
-        #self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
+        #self.fgbg = cv2.BackgroundSubtractorMOG2()
+        self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
 
         # create trackbar for skin calibration
         self.calib_switch = False
@@ -152,10 +152,16 @@ class App(object):
                 self.skin_calib(yrb)
             
             # Background Subtraction
-            fgmask = self.fgbg.apply(cv2.medianBlur(org_vis, 5))
+            fgmask = self.fgbg.apply(cv2.GaussianBlur( org_vis,(25,25),0 ))
+            kernel = np.ones( (5,5), np.uint8 )
+            fgmask = cv2.dilate(fgmask, kernel, iterations=1)
+            #fgmask = self.fgbg.apply(cv2.medianBlur(org_vis, 11))
             org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
             #fgmask = self.fgbg.apply(res_skin)
             #org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
+
+            ## test copy background substrct to skin res
+            res_skin = org_fg.copy()
 
 
             ### Find Contours inside ROI
@@ -300,7 +306,7 @@ class App(object):
             #cv2.imshow('YCR_CB', yrb)
             cv2.imshow('YRB_skin', res_skin)
             #cv2.imshow('fgmask', fgmask)
-            #cv2.imshow('org_fg', org_fg)
+            cv2.imshow('org_fg', org_fg)
 
             all_img = np.hstack((drawing, crop_res))
             cv2.imshow('Contours', all_img)
@@ -319,8 +325,8 @@ class App(object):
             
             if self.n_frame == 3:
                 cur_time = time.time()
-                print 'time for one loop:',(cur_time - ini_time)
-            print 'n_frame: ', self.n_frame
+                #print 'time for one loop:',(cur_time - ini_time)
+            #print 'n_frame: ', self.n_frame
             self.n_frame = (self.n_frame + 1) % 4
 
         cv2.destroyAllWindows()
