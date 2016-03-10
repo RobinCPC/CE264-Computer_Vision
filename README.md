@@ -28,13 +28,16 @@ Some material for each subtasks
 
     * [Find out how many fingers show up](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_contours_more_functions/py_contours_more_functions.html#contours-more-functions)
 
-- [ ] Hand Position Tracking
+- [x] Hand Position Tracking
 
+    * [Dynamically change center of ROI] (http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html#contour-features) 
 
 - [x] Input Control
 
     * [PyAutoGUI](http://pyautogui.readthedocs.org/en/latest/cheatsheet.html)
     * [PyUserInput](https://github.com/SavinaRoja/PyUserInput)
+    
+    > Note: PyAutoGUI work well in Woindows system for me. Ubuntu: got issue (invisible cursor move)
 
     For install PyAutoGUI on Linux (for python 2.x):
     
