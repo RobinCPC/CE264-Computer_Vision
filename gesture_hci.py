@@ -30,6 +30,52 @@ import sys
 pyautogui.FAILSAFE = True
 pyautogui.PAUSE = 0.1 # pause each pyautogui function 0.1 sec
 
+
+# BUild fixed-length Queue
+class FixedQueue:
+    '''
+    A container with First-In-First-Out (FIFO) queuing policy
+    But can only sotrage maximum number of items in container
+    '''
+    def __init__(self):
+        self.list = []
+        self.max_item = 10
+        self.n_maj = 8
+
+    def __str__(self):
+        "Return list as string for printing"
+        return str(self.list)
+
+    def push(self,item):
+        "Enqueue the item into the queue, but check length before add in"
+        if self.list.__len__() == self.max_item:
+            self.list.pop()
+        self.list.insert(0, item)
+
+    def pop(self):
+        "Dequeue the earliest enqueued item still in the queue."
+        return self.list.pop()
+
+    def major(self):
+        "Return the number that shows often in list"
+        maj = 0
+        count = 0
+        for i in xrange(5):
+            cur_cnt = self.list.count(i)
+            if cur_cnt > count:
+                maj = i
+                count = cur_cnt
+        return maj
+
+    def count(self, value):
+        "Return how many times that value show up in the queue"
+        return self.list.count(value)
+
+    def isEmpty(self):
+        "Return true if the queue is empty"
+        return len(self.list) == 0
+
+
 # Dummy callback for trackbar
 def nothing(x):
     pass
@@ -70,6 +116,8 @@ class App(object):
         # count loop (frame)
         self.n_frame = 0
 
+        self.last_cmds = FixedQueue()
+
 
     # On-line Calibration for skin detection (bug, not stable)
     def skin_calib(self, raw_yrb):
@@ -103,7 +151,7 @@ class App(object):
 
         res_skin = cv2.bitwise_and( org_vis, org_vis, mask= mask_skin)
         #res_skin_dn = cv2.fastNlMeansDenoisingColored(res_skin, None, 10, 10, 7,21)
- 
+
         return res_skin
 
 
@@ -152,15 +200,13 @@ class App(object):
             ## check if want to do skin calibration
             if self.calib_switch:
                 self.skin_calib(yrb)
-            
+
             # Background Subtraction
             fgmask = self.fgbg.apply(cv2.GaussianBlur( org_vis,(25,25),0 ))
             kernel = np.ones( (5,5), np.uint8 )
             #fgmask = cv2.dilate(fgmask, kernel, iterations=1)
             #fgmask = self.fgbg.apply(cv2.medianBlur(org_vis, 11))
             org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
-            #fgmask = self.fgbg.apply(res_skin)
-            #org_fg = cv2.bitwise_and(res_skin, res_skin, mask=fgmask)
 
             ## test copy background substrct to skin res
             res_skin = org_fg.copy()
@@ -173,17 +219,17 @@ class App(object):
                 Rxmin = 0
             else:
                 Rxmin = self.ROIx - 100
-            
+
             if self.ROIx + 100 > res_skin.shape[0]:
                 Rxmax = res_skin.shape[0]
             else:
                 Rxmax = self.ROIx + 100
-            
+
             if self.ROIy - 100 < 0:
                 Rymin = 0
             else:
                 Rymin = self.ROIy - 100
-            
+
             if self.ROIy + 100 > res_skin.shape[1]:
                 Rymax = res_skin.shape[1]
             else:
@@ -191,7 +237,7 @@ class App(object):
 
             #if self.track_switch:
             #    import pdb; pdb.set_trace()
-                
+
             cv2.rectangle(res_skin, (Rxmax, Rymax), (Rxmin, Rymin), (0,255,0), 0)
             crop_res = res_skin[Rymin: Rymax, Rxmin:Rxmax]
             grey = cv2.cvtColor(crop_res, cv2.COLOR_BGR2GRAY)
@@ -216,11 +262,9 @@ class App(object):
                 cnt = contours[ci]
 
 
-                
-
                 x,y,w,h = cv2.boundingRect(cnt)
                 cv2.rectangle(crop_res, (x,y), (x+w, y+h), (0,0,255), 0 )
-                
+
                 # check if start to track hand
                 if self.track_switch:
                     M = cv2.moments(cnt)
@@ -230,7 +274,7 @@ class App(object):
                     else:
                         self.ROIx = 200
                         self.ROIy = 200
-                
+
                 # debug draw a  circle at center
                 M = cv2.moments(cnt)
                 if not M['m00'] == 0:
@@ -241,8 +285,8 @@ class App(object):
                     #print 'x , y = ', x,y
                     #print 'cx+Rx, cy+Ry', cx+Rxmin, cy+Rymin
                     cv2.circle(res_skin, (cx+Rxmin,cy+Rymin), 10, [0,255,255],-1)
-                
-                
+
+
                 hull = cv2.convexHull(cnt)
                 cv2.drawContours(drawing, [cnt], 0, (0, 255, 0), 0)
                 cv2.drawContours(drawing, [hull], 0, (0, 0, 255), 0)
@@ -254,7 +298,7 @@ class App(object):
                 cv2.drawContours(thresh1, contours, -1, (0, 255, 0), 3)
 
                 ### Gesture Recognization
-                if not defects == None:
+                if not defects == None and cv2.contourArea(cnt) > 5000:
                     for i in range(defects.shape[0]):
                         s, e, f, d = defects[i,0]
                         start = tuple(cnt[s][0])
@@ -271,37 +315,53 @@ class App(object):
                         #dist = cv2.pointPolygonTest(cnt, fat, True)
                         cv2.line(crop_res, start, end, [0,255,0], 2)
                         #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
-                
+
                 d_x, d_y = 0, 0
                 if not self.preCX == None:
                     d_x = self.ROIx - self.preCX
                     d_y = self.ROIy - self.preCY
 
-                if count_defects == 1:
-                    str1 = '2, move mouse dx,dy = ' + str(d_x) + ', '+ str(d_y)
+                cur_cmd = 0
+                if self.cmd_switch:
+#                    import pdb; pdb.set_trace()
+#                    print 'self.count = ', self.last_cmds.count(count_defects)
+#                    print 'numebr of majority = ', self.last_cmds.n_maj
+                    if self.last_cmds.count(count_defects) >= self.last_cmds.n_maj:
+                        cur_cmd = count_defects
+                        #print 'major command is ', cur_cmd
+                    else:
+                        cur_cmd = 0 #self.last_cmds.major()
+
+
+                if cur_cmd == 1:
+                    str1 = '2, move mouse dx,dy = ' + str(d_x*3) + ', '+ str(d_y*3)
                     cv2.putText(org_vis,str1 , (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255),2)
                     if self.cmd_switch:
                         pyautogui.moveRel(d_x*3, d_y*3)
+                        self.last_cmds.push(count_defects)
                         #pyautogui.mouseDown(button='left')
                         #pyautogui.moveRel(d_x, d_y)
                     #else:
                     #    pyautogui.mouseUp(button='left')
-                elif count_defects == 2:
+                elif cur_cmd == 2:
                     cv2.putText(org_vis, '3 Left (rotate)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='left')
-                        #pyautogui.scroll(d_y,pause=0.2) 
-                elif count_defects == 3:
+                        self.last_cmds.push(count_defects)
+                elif cur_cmd == 3:
                     cv2.putText(org_vis, '4 middle (zoom)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='middle')
-                elif count_defects == 4:
+                        self.last_cmds.push(count_defects)
+                elif cur_cmd == 4:
                     cv2.putText(org_vis, '5 right (pan)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='right')
+                        self.last_cmds.push(count_defects)
                 else:
                     if self.cmd_switch:
                         cv2.putText(org_vis, 'No finger detect!', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
+                        self.last_cmds.push(count_defects)  # no finger detect or wrong gesture
 
                 self.preCX = self.ROIx
                 self.preCY = self.ROIy
@@ -328,9 +388,11 @@ class App(object):
                 self.calib_switch = not self.calib_switch
             elif ch == ord('t'):
                 self.track_switch = not self.track_switch
-            
+
             if self.n_frame == 3:
                 cur_time = time.time()
+#                if not self.last_cmds.isEmpty():
+#                    print self.last_cmds
                 #print 'time for one loop:',(cur_time - ini_time)
             #print 'n_frame: ', self.n_frame
             self.n_frame = (self.n_frame + 1) % 4
