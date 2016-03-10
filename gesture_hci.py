@@ -12,6 +12,8 @@ Keys:
 -----
     ESC     - exit
     c       - toggle mouse control (default: False)
+    t       - toggle hand tracking (defualt: Fasle)
+    s       - toggle skin calibration (need debug)
 
 '''
 
@@ -154,7 +156,7 @@ class App(object):
             # Background Subtraction
             fgmask = self.fgbg.apply(cv2.GaussianBlur( org_vis,(25,25),0 ))
             kernel = np.ones( (5,5), np.uint8 )
-            fgmask = cv2.dilate(fgmask, kernel, iterations=1)
+            #fgmask = cv2.dilate(fgmask, kernel, iterations=1)
             #fgmask = self.fgbg.apply(cv2.medianBlur(org_vis, 11))
             org_fg = cv2.bitwise_and(org_vis, org_vis, mask=fgmask)
             #fgmask = self.fgbg.apply(res_skin)
@@ -238,7 +240,7 @@ class App(object):
                     #print 'cx,cy = ', cx, cy
                     #print 'x , y = ', x,y
                     #print 'cx+Rx, cy+Ry', cx+Rxmin, cy+Rymin
-                    cv2.circle(res_skin, (cx+Rxmin,cy+Rymin), 5, [0,255,255],-1)
+                    cv2.circle(res_skin, (cx+Rxmin,cy+Rymin), 10, [0,255,255],-1)
                 
                 
                 hull = cv2.convexHull(cnt)
@@ -265,7 +267,7 @@ class App(object):
                         #print 'angle= ', angle
                         if angle <= 90:
                             count_defects += 1
-                            cv2.circle( crop_res, far, 1, [0,0,255], -1)
+                            cv2.circle( crop_res, far, 5, [0,0,255], -1)
                         #dist = cv2.pointPolygonTest(cnt, fat, True)
                         cv2.line(crop_res, start, end, [0,255,0], 2)
                         #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
@@ -276,29 +278,30 @@ class App(object):
                     d_y = self.ROIy - self.preCY
 
                 if count_defects == 1:
-                    str1 = '2 finger, move \nmouse dx,dy = ' + str(d_x) + ', '+ str(d_y)
-                    cv2.putText(org_vis,str1 , (50,50), cv2.FONT_ITALIC, 1, 2)
+                    str1 = '2, move mouse dx,dy = ' + str(d_x) + ', '+ str(d_y)
+                    cv2.putText(org_vis,str1 , (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255),2)
                     if self.cmd_switch:
-                        pyautogui.moveRel(d_x, d_y)
+                        pyautogui.moveRel(d_x*3, d_y*3)
                         #pyautogui.mouseDown(button='left')
                         #pyautogui.moveRel(d_x, d_y)
                     #else:
                     #    pyautogui.mouseUp(button='left')
                 elif count_defects == 2:
-                    cv2.putText(org_vis, '3 finger, Left. (rotate)', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    cv2.putText(org_vis, '3 Left (rotate)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='left')
-                        #pyautogui.scroll(d_y,pause=0.2)
+                        #pyautogui.scroll(d_y,pause=0.2) 
                 elif count_defects == 3:
-                    cv2.putText(org_vis, '4 finger, middle. (zoom)', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    cv2.putText(org_vis, '4 middle (zoom)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='middle')
                 elif count_defects == 4:
-                    cv2.putText(org_vis, '5 finger, right. (pan)', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    cv2.putText(org_vis, '5 right (pan)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='right')
                 else:
-                    cv2.putText(org_vis, 'No finger detect!', (50,50), cv2.FONT_ITALIC, 2, 2)
+                    if self.cmd_switch:
+                        cv2.putText(org_vis, 'No finger detect!', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
 
                 self.preCX = self.ROIx
                 self.preCY = self.ROIy
@@ -309,7 +312,7 @@ class App(object):
             #cv2.imshow('YCR_CB', yrb)
             cv2.imshow('YRB_skin', res_skin)
             #cv2.imshow('fgmask', fgmask)
-            cv2.imshow('org_fg', org_fg)
+            #cv2.imshow('org_fg', org_fg)
 
             all_img = np.hstack((drawing, crop_res))
             cv2.imshow('Contours', all_img)
