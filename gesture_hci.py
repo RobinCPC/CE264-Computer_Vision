@@ -39,14 +39,14 @@ class FixedQueue:
     '''
     def __init__(self):
         self.list = []
-        self.max_item = 10
-        self.n_maj = 8
+        self.max_item = 5
+        self.n_maj = 4
 
     def __str__(self):
         "Return list as string for printing"
         return str(self.list)
 
-    def push(self,item):
+    def push(self, item):
         "Enqueue the item into the queue, but check length before add in"
         if self.list.__len__() == self.max_item:
             self.list.pop()
@@ -80,14 +80,14 @@ class FixedQueue:
 def nothing(x):
     pass
 
-### uncomment if want to do on-line skin calibration
+# uncomment if want to do on-line skin calibration
 cv2.namedWindow('YRB_calib')
-cv2.createTrackbar( 'Ymin', 'YRB_calib', 54, 255, nothing)
-cv2.createTrackbar( 'Ymax', 'YRB_calib', 143, 255, nothing)
-cv2.createTrackbar( 'CRmin', 'YRB_calib', 131, 255, nothing)
-cv2.createTrackbar( 'CRmax', 'YRB_calib', 157, 255, nothing)
-cv2.createTrackbar( 'CBmin', 'YRB_calib', 110, 255, nothing)
-cv2.createTrackbar( 'CBmax', 'YRB_calib', 155, 255, nothing)
+cv2.createTrackbar('Ymin', 'YRB_calib', 54, 255, nothing)
+cv2.createTrackbar('Ymax', 'YRB_calib', 143, 255, nothing)
+cv2.createTrackbar('CRmin', 'YRB_calib', 131, 255, nothing)
+cv2.createTrackbar('CRmax', 'YRB_calib', 157, 255, nothing)
+cv2.createTrackbar('CBmin', 'YRB_calib', 110, 255, nothing)
+cv2.createTrackbar('CBmax', 'YRB_calib', 155, 255, nothing)
 
 
 class App(object):
@@ -95,28 +95,36 @@ class App(object):
         self.cam = cv2.VideoCapture(video_src)
         ret, self.frame = self.cam.read()
         cv2.namedWindow('gesture_hci')
-
+        
+        # swtich to turn on mouse input control
         self.cmd_switch = False
-        self.mask_lower_yrb = np.array([44, 131, 80])      #[54, 131, 110]
-        self.mask_upper_yrb = np.array([163, 157, 155])     #[163, 157, 135]
-
-        #self.fgbg = cv2.BackgroundSubtractorMOG2()
-        self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
-
+        
+        # set channel range of skin detection 
+        self.mask_lower_yrb = np.array([44, 131, 80])       # [54, 131, 110]
+        self.mask_upper_yrb = np.array([163, 157, 155])     # [163, 157, 135]
         # create trackbar for skin calibration
         self.calib_switch = False
+
+        # create background subtractor 
+        self.fgbg = cv2.BackgroundSubtractorMOG2(history=120, varThreshold=50, bShadowDetection=True)
 
         # define dynamic ROI area
         self.ROIx, self.ROIy = 200, 200
         self.track_switch = False
-
+        # record previous positions of the centroid of ROI
         self.preCX = None
         self.preCY = None
 
-        # count loop (frame)
+        # count loop (frame), for debuging 
         self.n_frame = 0
 
+        # A queue to record last couple gesture command
         self.last_cmds = FixedQueue()
+        
+        # prepare some data for detecting single-finger gesture  
+        self.fin1 = cv2.imread('./test_data/index1.jpg')
+        self.fin2 = cv2.imread('./test_data/index2.jpg')
+        self.fin3 = cv2.imread('./test_data/index3.jpg')
 
 
     # On-line Calibration for skin detection (bug, not stable)
@@ -183,7 +191,7 @@ class App(object):
 
 
     def run(self):
-        while True:
+        while self.cam.isOpened():
             if self.n_frame == 0:
                 ini_time = time.time()
             ret, self.frame = self.cam.read()
@@ -269,8 +277,8 @@ class App(object):
                 if self.track_switch:
                     M = cv2.moments(cnt)
                     if not M['m00'] == 0:
-                        self.ROIx = int(M['m10']/M['m00']) + Rxmin #+ x
-                        self.ROIy = int(M['m01']/M['m00']) + Rymin - 30 #+ y
+                        self.ROIx = int(M['m10']/M['m00']) + Rxmin
+                        self.ROIy = int(M['m01']/M['m00']) + Rymin - 30
                     else:
                         self.ROIx = 200
                         self.ROIy = 200
@@ -290,7 +298,7 @@ class App(object):
                 hull = cv2.convexHull(cnt)
                 cv2.drawContours(drawing, [cnt], 0, (0, 255, 0), 0)
                 cv2.drawContours(drawing, [hull], 0, (0, 0, 255), 0)
-                hull = cv2.convexHull( cnt, returnPoints = False)
+                hull = cv2.convexHull( cnt, returnPoints = False)       # For finding defects
                 #import pdb; pdb.set_trace()
                 if hull.size > 2:
                     defects = cv2.convexityDefects(cnt, hull)
@@ -298,7 +306,8 @@ class App(object):
                 cv2.drawContours(thresh1, contours, -1, (0, 255, 0), 3)
 
                 ### Gesture Recognization
-                if not defects == None and cv2.contourArea(cnt) > 5000:
+                #min_cir = []
+                if not defects == None and cv2.contourArea(cnt) >= 5000:
                     for i in range(defects.shape[0]):
                         s, e, f, d = defects[i,0]
                         start = tuple(cnt[s][0])
@@ -312,10 +321,44 @@ class App(object):
                         if angle <= 90:
                             count_defects += 1
                             cv2.circle( crop_res, far, 5, [0,0,255], -1)
-                        #dist = cv2.pointPolygonTest(cnt, fat, True)
+                            #min_cir.append(list(far))
+                        #dist = cv2.pointPolygonTest(cnt, far, True)
                         cv2.line(crop_res, start, end, [0,255,0], 2)
                         #cv2.circle(crop_res, far, 5, [0,255, 255], -1)
-
+#                (minx,miny), radius = cv2.minEnclosingCircle(np.array(min_cir))
+#                center = (int(minx), int(miny))
+#                radius = int(radius)
+#                cv2.circle(crop_res, center, radius, (0, 255, 255), 2)
+                
+                ## single fingertip check
+                if count_defects == 0 and cv2.contourArea(cnt) >= 5000:
+                    grey_fin1 = cv2.cvtColor(self.fin1, cv2.COLOR_BGR2GRAY)
+                    _, thresh_fin1 = cv2.threshold(grey_fin1, 127, 255, 0)
+                    countour_fin1, hierarchy = cv2.findContours(thresh_fin1.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+                    cnt1 = countour_fin1[0]
+                    ret1 = cv2.matchShapes(cnt, cnt1, 1, 0)
+                    
+                    grey_fin2 = cv2.cvtColor(self.fin2, cv2.COLOR_BGR2GRAY)
+                    _, thresh_fin2 = cv2.threshold(grey_fin2, 127, 255, 0)
+                    countour_fin2, hierarchy = cv2.findContours(thresh_fin2.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+                    cnt2 = countour_fin2[0]
+                    ret2 = cv2.matchShapes(cnt, cnt2, 1, 0)
+                    
+                    grey_fin3 = cv2.cvtColor(self.fin3, cv2.COLOR_BGR2GRAY)
+                    _, thresh_fin3 = cv2.threshold(grey_fin3, 127, 255, 0)
+                    countour_fin3, hierarchy = cv2.findContours(thresh_fin3.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_NONE)
+                    cnt3 = countour_fin3[0]
+                    ret3 = cv2.matchShapes(cnt, cnt3, 1, 0)
+                    reta = (ret1 + ret2 + ret3)/3
+#                    if self.n_frame == 3:
+#                        print 'Shape Match 1, 2, 3 = %s, %s %s' % (ret1, ret2, ret3)
+#                        print 'Average Match = ', reta
+                    if reta <= 0.3:
+                        count_defects = 5       # set as one-finger module
+                    else:
+                        count_defects = 0       # not detect, still 0
+                
+                ### Input Control (Mouse Event)
                 d_x, d_y = 0, 0
                 if not self.preCX == None:
                     d_x = self.ROIx - self.preCX
@@ -357,6 +400,10 @@ class App(object):
                     cv2.putText(org_vis, '5 right (pan)', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
                     if self.cmd_switch:
                         pyautogui.dragRel(d_x, d_y, button='right')
+                        self.last_cmds.push(count_defects)
+                elif cur_cmd == 5:
+                    cv2.putText(org_vis, '1 fingertip show up', (50,50), cv2.FONT_HERSHEY_TRIPLEX, 2, (0,0,255), 2)
+                    if self.cmd_switch:
                         self.last_cmds.push(count_defects)
                 else:
                     if self.cmd_switch:
