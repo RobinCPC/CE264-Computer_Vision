@@ -14,25 +14,30 @@ Some material for each subtasks
 
    * [GUI feature in OpenCV](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_gui/py_table_of_contents_gui/py_table_of_contents_gui.html#py-table-of-content-gui)
 
-- [ ] Background Subtraction
+- [x] Blur, Skin Detection, Morphology, Background Subtraction
 
-    * [Change BGR to HSV or YIQ](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html#converting-colorspaces)
+    * [Change BGR to HSV or YCrCb](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_colorspaces/py_colorspaces.html#converting-colorspaces)
+    * [Do medianBlur](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_filtering/py_filtering.html#filtering)
     * [Do erode and dilate](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_morphological_ops/py_morphological_ops.html#morphological-ops)
 
-- [ ] Hand Contour Extraction
+- [x] Hand Contour Extraction
 
     * [Draw Contour and Find Convex Hull or Convexity Defects](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_table_of_contents_contours/py_table_of_contents_contours.html#table-of-content-contours)
 
-- [ ] Gesture Recognition
+- [X] Gesture Recognition
 
+    * [Find out how many fingers show up](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_contours_more_functions/py_contours_more_functions.html#contours-more-functions)
 
-- [ ] Hand Position Tracking
+- [x] Hand Position Tracking
 
+    * [Dynamically change center of ROI] (http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_contour_features/py_contour_features.html#contour-features) 
 
-- [ ] Input Control
+- [x] Input Control
 
     * [PyAutoGUI](http://pyautogui.readthedocs.org/en/latest/cheatsheet.html)
     * [PyUserInput](https://github.com/SavinaRoja/PyUserInput)
+    
+    > Note: PyAutoGUI work well in Woindows system for me. Ubuntu: got issue (invisible cursor move)
 
     For install PyAutoGUI on Linux (for python 2.x):
     
@@ -54,3 +59,13 @@ Some material for each subtasks
     C:\Python27\Scripts\pip.exe install pyautogui
     ```
     Turn off Windows UAC
+
+
+## Reference
+
+* Hui-Shyong Yeo; Byung-Gook Lee; Hyotaek Lim, "Hand tracking and gesture recognition system for 
+  human-computer interaction using low-cost hardware", Multimedia Tools and Applications, Vol. 74, 
+  Issue 8, Apr. 2015, On page(s) 2687-2715.
+
+* http://vipulsharma20.blogspot.com/2015/03/gesture-recognition-using-opencv-python.html
+
