@@ -92,7 +92,7 @@ cv2.createTrackbar('CRmax', 'YRB_calib', 157, 255, nothing)
 cv2.createTrackbar('CBmin', 'YRB_calib', 110, 255, nothing)
 cv2.createTrackbar('CBmax', 'YRB_calib', 155, 255, nothing)
 
-
+# Main part of gesture_hci
 class App(object):
     def __init__(self, video_src):
         self.cam = cv2.VideoCapture(video_src)

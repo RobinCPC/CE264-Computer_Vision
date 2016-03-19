@@ -24,7 +24,7 @@ Some material for each subtasks
 
     * [Draw Contour and Find Convex Hull or Convexity Defects](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_table_of_contents_contours/py_table_of_contents_contours.html#table-of-content-contours)
 
-- [ ] Gesture Recognition
+- [X] Gesture Recognition
 
     * [Find out how many fingers show up](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_contours_more_functions/py_contours_more_functions.html#contours-more-functions)
 
@@ -59,3 +59,13 @@ Some material for each subtasks
     C:\Python27\Scripts\pip.exe install pyautogui
     ```
     Turn off Windows UAC
+
+
+## Reference
+
+* Hui-Shyong Yeo; Byung-Gook Lee; Hyotaek Lim, "Hand tracking and gesture recognition system for 
+  human-computer interaction using low-cost hardware", Multimedia Tools and Applications, Vol. 74, 
+  Issue 8, Apr. 2015, On page(s) 2687-2715.
+
+* http://vipulsharma20.blogspot.com/2015/03/gesture-recognition-using-opencv-python.html
+
