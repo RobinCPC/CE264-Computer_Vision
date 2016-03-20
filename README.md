@@ -48,6 +48,7 @@ Some material for each subtasks
     
     # skip install python-tk and python2.x-dev (already had)
     # instal Pyautogui
+    $ sudo apt-get install python-pip # if don't have pip
     $ sudo pip install pyautogui
     ```
     
