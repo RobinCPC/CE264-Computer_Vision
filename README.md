@@ -4,7 +4,7 @@ Repository for project code of CE264 Computer Vision
 ## Application of Hand-gesture Recognition Technology Using OpenCV
 
 
-The following is draft flow chart of porject program:
+The following is draft flow chart of project program:
 
 ![flow chart](./program_flow.png)
 
@@ -37,7 +37,7 @@ Some material for each subtasks
     * [PyAutoGUI](http://pyautogui.readthedocs.org/en/latest/cheatsheet.html)
     * [PyUserInput](https://github.com/SavinaRoja/PyUserInput)
     
-    > Note: PyAutoGUI work well in Woindows system for me. Ubuntu: got issue (invisible cursor move)
+    > Note: PyAutoGUI work well in Windows system for me. Ubuntu: got issue (invisible cursor move)
 
     For install PyAutoGUI on Linux (for python 2.x):
     
