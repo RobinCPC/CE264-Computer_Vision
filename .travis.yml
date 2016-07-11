@@ -1,20 +1,24 @@
 language: python
 python:
-    - "2.6"
     - "2.7"
 # command to install libs for ubuntu
-sudo: required
+#sudo: required
 before_install:
     - sudo apt-get update -qq
-    - sudo apt-get install -qq python-xlib
-    - sudo apt-get install -qq scrot
-# command to install dependencies
-install:
-#    - pip install .
-    - pip install -r requirements.txt
+    - sudo apt-get install -y python-dev python-xlib python-tk
+#    - sudo apt-get install -qq scrot
+    - curl http://heanet.dl.sourceforge.net/project/python-xlib/python-xlib/0.15rc1/python-xlib-0.15rc1.tar.gz -o /tmp/python-xlib-0.15rc1.tar.gz
+    - tar -zxvf /tmp/python-xlib-0.15rc1.tar.gz
+    - pip install --upgrade pip
+    - pip install /tmp/python-xlib-0.15rc1.tar.gz
+#    - pip install wheel
+#    - pip install mock
+    - pip install pillow==3.0.0
+    - pip install pyautogui==0.9.31
 # command to run tests
 script:
-    - python pyautogui_test.py
+    - pip list
+#    - python pyautogui_test.py
 # command to notify developer
 notifications:
     email: false
