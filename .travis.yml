@@ -3,17 +3,17 @@ python:
     - "2.6"
     - "2.7"
 # command to install libs for ubuntu
-before_install:
-	- sudo apt-get update -qq
-	- sudo apt-get install -qq python-xlib
-	- sudo apt-get install -qq scrot
+#before_install:
+#	- sudo apt-get update -qq
+#	- sudo apt-get install -qq python-xlib
+#	- sudo apt-get install -qq scrot
 # command to install dependencies
 install:
     - pip install .
     - pip install -r requirements.txt
 # command to run tests
 script:
-    - pyautogui_test.py
+    - python pyautogui_test.py
 # command to notify developer
 notifications:
     email: false

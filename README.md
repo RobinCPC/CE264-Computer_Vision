@@ -1,4 +1,6 @@
 # CE264-Computer Vision
+[![Build Status](https://travis-ci.org/RobinCPC/CE264-Computer_Vision.svg?branch=master)](https://travis-ci.org/RobinCPC/CE264-Computer_Vision)
+
 :school: Repository for project code of CE264 Computer Vision
 
 ## Application of Hand-gesture Recognition Technology Using OpenCV
