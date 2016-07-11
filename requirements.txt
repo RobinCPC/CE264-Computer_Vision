@@ -4,5 +4,5 @@ Pillow==2.8.2
 #PyScreeze==0.1.8
 #PyTweening==1.0.3
 #PyMsgBox==1.0.3
-python-xlib
+Xlib
 pyautogui==0.9.33
