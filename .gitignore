@@ -58,10 +58,13 @@ docs/_build/
 # PyBuilder
 target/
 
-#Ipython Notebook
+# Ipython Notebook
 .ipynb_checkpoints
 
 # Video file
 *.avi
 *.mpg
 *.mov
+
+# Pycharm
+.idea/

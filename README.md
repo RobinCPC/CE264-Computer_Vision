@@ -1,5 +1,5 @@
 # CE264-Computer Vision
-Repository for project code of CE264 Computer Vision
+:school: Repository for project code of CE264 Computer Vision
 
 ## Application of Hand-gesture Recognition Technology Using OpenCV
 
@@ -24,7 +24,7 @@ Some material for each subtasks
 
     * [Draw Contour and Find Convex Hull or Convexity Defects](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_table_of_contents_contours/py_table_of_contents_contours.html#table-of-content-contours)
 
-- [X] Gesture Recognition
+- [x] Gesture Recognition
 
     * [Find out how many fingers show up](http://docs.opencv.org/3.0-last-rst/doc/py_tutorials/py_imgproc/py_contours/py_contours_more_functions/py_contours_more_functions.html#contours-more-functions)
 
