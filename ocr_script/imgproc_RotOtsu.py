@@ -35,15 +35,12 @@ if __name__ == '__main__':
         row, col = img.shape
         plt.imshow(img, 'gray')
         plt.show()
-        #gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        #img2 = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
         rot_ang = args.rotate
         M = cv2.getRotationMatrix2D((col/2, row/2), rot_ang, 1)   # (center, angle, scale)
         img_r = cv2.warpAffine(img, M, (col, row))
 
         # === smooth image ===
         blur = cv2.GaussianBlur(img_r, (5, 5), 0)    # (k_size, sigma_x)
-        #blur = img
 
         # === binarize image ===
         bin_method = args.binarize
@@ -55,9 +52,6 @@ if __name__ == '__main__':
         plt.imshow(th, 'gray')
         plt.show()
         cv2.imwrite(inp[0:-3]+'png', th)
-        #cv2.waitKey(0)
-        #cv2.destroyAllWindows()
     except:
         print 'no input file or not image type file'
 
-    # return 0

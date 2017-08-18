@@ -3,7 +3,7 @@
 """
 This script is to test Google Cloud Vision OCR (text detect) API
 
-Example CLI: 
+Example CLI:
 > python GoogleCloudOCR.py ./ch4_test/
 
 Notice: need to create folders out_file, out_file3, out_file4 before run this.
@@ -112,16 +112,8 @@ def get_text_from_files(vision, input_filenames, input_dir):
             print "detect nothing!"
             continue
 
-        #print text[0]['description']
-        #t0 = text[0]
-        #vertices = (['{},{}'.format(bound['x'], bound['y']) for bound in t0['boundingPoly']['vertices']])
-        #print('bound: {}'.format(','.join(vertices)))
-
-        #import pdb
-        #pdb.set_trace()
         for e in text[1:]:
             try:
-                #vertices = (['{},{}'.format(bound['x'], bound['y']) for bound in e['boundingPoly']['vertices']])
                 vertices = []
                 for bound in e['boundingPoly']['vertices']:
                     x, y = bound['x'], bound['y']
@@ -153,11 +145,9 @@ def get_text_from_files(vision, input_filenames, input_dir):
             csvfile4.write(','.join(vertices)+'\r\n')
             if is_verbose:
                 print('{}'.format(','.join(out_str)))
-            #print e['description'], e['boundingPoly']['vertices']
         csvfile.close()
         csvfile3.close()
         csvfile4.close()
-        #extract_descriptions(filename, index, text)
 
 
 def batch(iterable, batch_size=BATCH_SIZE):

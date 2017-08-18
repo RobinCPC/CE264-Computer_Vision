@@ -46,8 +46,6 @@ def unicodetoascii(text):
     except Exception, e:
         print e
         return text
-        #raise e:
-    #return text.decode('utf-8').translate(uni2ascii).encode('ascii')
 
 
 def read_file(f_name):
@@ -80,7 +78,6 @@ def read_file_split(f_name):
             if '\xe2' in line:
                 line = unicodetoascii(line)
 
-            #print line
             if (len(line) == 1 and line[0] == '\n') or len(line) == 0:
                 continue
             elif line[-1] == '\n':
@@ -124,9 +121,6 @@ def levenshteinDistance(src, res):
     :type res: string
     :rtyep cost: int
     """
-    # print 'src len: ' + str(len(src))
-    # print 'res len: ' + str(len(res))
-
     # degerate cases
     if (src == res):
         return 0
@@ -173,14 +167,6 @@ if __name__ == '__main__':
     print src_list
     print abb_list
     print tess_list
-
-    #for s in src_list:
-    #    print s, len(s)
-    #    #ss = s.decode('string_escape')
-    #    #print ss, len(ss)
-
-    #count = levenshteinDistance('sitting', 'kitten')
-    #print count
 
     # Compute Levenshtein Distance
 
