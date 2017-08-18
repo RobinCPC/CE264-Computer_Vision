@@ -41,7 +41,13 @@ def unicodetoascii(text):
             ord('\xe2\x81\xbe'.decode('utf-8')): ord(")"),
 
                             }
-    return text.decode('utf-8').translate(uni2ascii).encode('ascii')
+    try:
+        return text.decode('utf-8').translate(uni2ascii).encode('ascii') 
+    except Exception, e:
+        print e
+        return text
+        #raise e:
+    #return text.decode('utf-8').translate(uni2ascii).encode('ascii')
 
 
 def read_file(f_name):
